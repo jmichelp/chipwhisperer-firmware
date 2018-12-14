@@ -25,7 +25,7 @@ function build_and_move {
   local prefix="$1"
   local platform="$2"
   local crypto_target="$3"
-  local dest_name="${platform}_${crypto_target}"
+  local dest_name="${platform//_/-}_${crypto_target}"
   local build_params="PLATFORM=${platform} CRYPTO_TARGET=${crypto_target}"
   mkdir -p "${DEST_DIR}/${prefix}/"
   if [ $# -eq 3 ]; then
@@ -43,7 +43,7 @@ function build_and_move {
   echo -e "    \033[33;1mmake ${build_params}\033[0;m"
   make ${build_params} > /dev/null && succeeded+=("${prefix}/${dest_name}") || failed+=("${prefix}/${dest_name}")
   for ext in $exts; do
-    mv "${prefix}-${platform}.${ext}" "${DEST_DIR}/${prefix}/${prefix}-${dest_name}.${ext}"
+    mv "${prefix}-${platform}.${ext}" "${DEST_DIR}/${prefix}/${prefix}_${dest_name}.${ext}"
   done
   popd
 }
@@ -53,6 +53,9 @@ build_and_move simpleserial-aes CW303 AVRCRYPTOLIB
 
 # CW303 XMEGA HWCRYPTO
 build_and_move simpleserial-aes CW303 HWAES "MCU=atxmega128a4u"
+
+# CW303 XMEGA with AES from Digitalbitbox crypto wallet
+build_and_move simpleserial-aes CW303 DIGITALBITBOXAES
 
 # NOTDUINO avrcrypto
 build_and_move simpleserial-aes CW304 AVRCRYPTOLIB
@@ -68,11 +71,34 @@ for v in 1 2; do
 done
 
 # ARM targets
-for ptf in CW308_STM32F1 CW308_STM32F2 CW308_STM32F3 CW308_STM32F4 CW308_K24F CW308_NRF52; do
-  for crypto in TINYAES128C MBEDTLS MASKEDAES HWAES; do
+declare -a arm_targets=("SAM4L:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
+                        "STM32F0:TINYAES128C,DIGITALBITBOXAES"
+                        "STM32F1:TINYAES128C,DIGITALBITBOXAES"
+                        "STM32F2:TINYAES128C,MBEDTLS,DIGITALBITBOXAES"
+                        "STM32F3:TINYAES128C,MBEDTLS,DIGITALBITBOXAES"
+                        "STM32F4:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
+                        "CC2538:TINYAES128C,MBEDTLS,MASKEDAES,DIGITALBITBOXAES"
+                        "K24F:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
+                        "NRF52:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
+                        "SAML11:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
+                        "EFM32TG11B:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
+                        "K82F:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES")
+for target in ${arm_targets[@]}; do
+  unset cryptos
+  ptf=(${target//:/ })
+  cryptos=${ptf[1]}
+  cryptos=(${cryptos//,/ })
+  ptf="CW308_"${ptf[0]}
+  for crypto in ${cryptos[@]}; do
     build_and_move simpleserial-aes ${ptf} ${crypto}
   done
 done
+unset cryptos ptf
+
+# AURIX. Build only if the compiler is present
+if which tricore-gcc > /dev/null 2>&1; then
+  build_and_move simpleserial-aes CW308_AURIX HWAES
+fi
 
 # print summary
 echo 'Successfully built targets:'
