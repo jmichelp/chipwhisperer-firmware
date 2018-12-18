@@ -82,7 +82,7 @@ declare -a arm_targets=("SAM4L:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOX
                         "NRF52:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
                         "SAML11:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
                         "EFM32TG11B:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES"
-                        "K82F:TINYAES128C,MBEDTLS,MASKEDAES,HWAES,DIGITALBITBOXAES")
+                        "K82F:TINYAES128C,MBEDTLS,MASKEDAES,HWAES=MMCAU,HWAES=LTC,DIGITALBITBOXAES")
 for target in ${arm_targets[@]}; do
   unset cryptos
   ptf=(${target//:/ })
@@ -90,7 +90,14 @@ for target in ${arm_targets[@]}; do
   cryptos=(${cryptos//,/ })
   ptf="CW308_"${ptf[0]}
   for crypto in ${cryptos[@]}; do
-    build_and_move simpleserial-aes ${ptf} ${crypto}
+    tmp=(${crypto//=/ })
+    crypto_target=${tmp[0]}
+    crypto_options=${tmp[1]}
+    if [ "x${crypto_options}" = "x" ]; then
+      build_and_move simpleserial-aes ${ptf} ${crypto_target}
+    else
+      build_and_move simpleserial-aes ${ptf} ${crypto_target} "CRYPTO_OPTIONS=${crypto_options}" "${crypto_options}"
+    fi
   done
 done
 unset cryptos ptf
