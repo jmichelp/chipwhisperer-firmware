@@ -39,7 +39,7 @@ function build_and_move {
     error "Invalid function call to build_and_move(). Received $# args while expecting either 3, 4 or 5: $@"
   fi
   pushd "${CW_MAIN}/${prefix}"
-  echo -e "[*] \033[36;1m${prefix}-${dest_name}\033[0;m"
+  echo -e "[*] \033[36;1m${prefix}_${dest_name}\033[0;m"
   echo -e "    \033[33;1mmake ${build_params}\033[0;m"
   make ${build_params} > /dev/null && succeeded+=("${prefix}/${dest_name}") || failed+=("${prefix}/${dest_name}")
   for ext in $exts; do
@@ -105,6 +105,17 @@ unset cryptos ptf
 # AURIX. Build only if the compiler is present
 if which tricore-gcc > /dev/null 2>&1; then
   build_and_move simpleserial-aes CW308_AURIX HWAES
+fi
+
+# ESP32
+if which xtensa-esp32-elf-gcc > /dev/null 2>&1; then
+  pushd "${CW_MAIN}/esp32/simpleserial"
+  echo -e "[*] \033[36;1msimpleserial-aes_CW308-ESP32_HWAES\033[0;m"
+  echo -e "    \033[33;1mmake\033[0;m"
+  make > /dev/null && succeeded+=("simpleserial-aes_CW308-ESP32_HWAES") || failed+=("simpleserial-aes_CW308-ESP32_HWAES")
+  mkdir -p "${DEST_DIR}/simpleserial-aes/"
+  mv "build/simpleserial.elf" "${DEST_DIR}/simpleserial-aes/simpleserial-aes_CW308-ESP32_HWAES.elf"
+  popd
 fi
 
 # print summary
