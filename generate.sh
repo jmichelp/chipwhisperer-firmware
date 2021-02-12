@@ -30,6 +30,7 @@ function error {
 
 function build_and_move {
   local exts="elf hex"
+  local cleanup_exts="map sym lss eep"
   local prefix="$1"
   local platform="$2"
   local crypto_target="$3"
@@ -52,6 +53,9 @@ function build_and_move {
   make ${build_params} > /dev/null && succeeded+=("${prefix}/${dest_name}") || failed+=("${prefix}/${dest_name}")
   for ext in $exts; do
     mv "${prefix}-${platform}.${ext}" "${DEST_DIR}/${prefix}/${prefix}_${dest_name}.${ext}"
+  done
+  for ext in $cleanup_exts; do
+    rm -f *.${ext}
   done
   popd
 }
@@ -139,7 +143,11 @@ if which riscv64-unknown-elf-gcc > /dev/null 2>&1; then
 fi
 
 # ESP32
-if which xtensa-esp32-elf-gcc > /dev/null 2>&1; then
+if [ "${IDF_PATH}" != "" ]; then
+  source "${IDF_PATH}/export.sh"
+fi
+if which idf_tools.py > /dev/null 2>&1; then
+  # setting the env
   pushd "${CW_MAIN}/esp32/simpleserial"
   echo -e "[*] \033[36;1msimpleserial-aes_CW308-ESP32_HWAES\033[0;m"
   echo -e "    \033[33;1mmake\033[0;m"
